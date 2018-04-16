@@ -164,6 +164,7 @@ The final result can be seen in this video: [link to my video result](./output_v
 
 The performance looks in my opinion good, the vehicles are indeed detected most of the time and the number of false positives is very low. One of the false positives happens on an oncoming car, which is maybe not to be treated as a false positive. For a few cycles the white car on the right is lost, but since the car is on the overnext lane this should not be a problem.
 
+The final pipeline is to be found in cell 29.
 
 #### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
