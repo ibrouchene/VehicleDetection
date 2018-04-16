@@ -133,7 +133,7 @@ the pipeline performs well enough in the test images, all vehicles are hit at le
 
 #### 3. Overlapping windows
 
-As we can see, for a single car on the image we might get multiple hits. We need to combine those hits in order to have a single object, and it will also help getting a bounding box that best fits. For this purpose we use the heat map approach from the lesson. Code is to be seen in cells 19 and 20. A low threshold for the heatmap was chosen in order to have a positive detection of the car on the image test3.jpg. This might be making the pipeline more vulnerable to false positives, but the tracking process is expected later to add the last bit of robustness towards false detections.
+As we can see, for a single car on the image we might get multiple hits. We need to combine those hits in order to have a single object, and it will also help getting a bounding box that best fits. For this purpose we use the heat map approach from the lesson. Code is to be seen in cells 19 and 20. A low threshold for the heatmap was chosen in order to have a positive detection of the car on the image test3.jpg.
 
 ![alt text][image8]
 ![alt text][image9]
@@ -142,37 +142,32 @@ As we can see, for a single car on the image we might get multiple hits. We need
 ![alt text][image12]
 ![alt text][image13]
 
-#### 4. Car class
-Let's create a car class, that will have the following attributes:
-- bounding box
-- age of car (frame counter)
-- detection losses (counter): if a car leaves the field of view and is not detected anymore this counter can be used for dropping the detection
-
-The creation of this class will be necessary for the video pipeline.
-
 
 ### Video Implementation
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
-Here's a [link to my video result](./project_video.mp4)
+Here's a [link to my video result](./output_videos/project_video_initial.mp4)
+
+The pipeline works pretty well, with a low amount of false positives. However there is a problem with false negatives, the white overtaking car on the right side is not detected for a very long time. In order to improve the situation, and since the classification performance is pretty good, I decided to add some scaled windows for the search. My suspicion is that the white car is no longer detected because the window size in that area is not appropriate. After a few trials, I ended up using:
+- hits 2 far region: y ranges from 410 to 466, scale factor 1.2
+- hits 2 near region: y ranges from 400 to 515, scale factor 2.0
+- hits 1 far region: y ranges from 410 to 500, scale factor 1.2
+- hits 1 near region: y ranges from 400 to 564, scale factor 2.0
+
+this combination improves a lot the final result, as can be seen in this video [link to my video result](./output_videos/project_video_version2.mp4)
+
+
+This output is much better, but we still need to improve the performance a bit. The next possibility would be to keep the heat map in memory instead of re-initializing it at each cycle.
+For this purpose we just store in a list the last 5 heatmaps, and compute the average for each cell over the last 5 cycles.
+
+The final result can be seen in this video: [link to my video result](./output_videos/project_video_final.mp4)
+
+The performance looks in my opinion good, the vehicles are indeed detected most of the time and the number of false positives is very low. One of the false positives happens on an oncoming car, which is maybe not to be treated as a false positive. For a few cycles the white car on the right is lost, but since the car is on the overnext lane this should not be a problem.
 
 
 #### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
-I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
-
-Here's an example result showing the heatmap from a series of frames of video, the result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
-
-### Here are six frames and their corresponding heatmaps:
-
-![alt text][image5]
-
-### Here is the output of `scipy.ndimage.measurements.label()` on the integrated heatmap from all six frames:
-![alt text][image6]
-
-### Here the resulting bounding boxes are drawn onto the last frame in the series:
-![alt text][image7]
-
+Please refer to 3. Overlapping windows above. I used the heat map method from the class for reducing the amount of false positives.
 
 
 ---
@@ -181,5 +176,10 @@ Here's an example result showing the heatmap from a series of frames of video, t
 
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+one of the main issues was finding a proper set of scales and windows for the generation of the HOG. The following points could improve in my opinion the functionality of the detection function:
+
+- Use different scales in Y and X, as objects appear to have a different size depending on their lateral displacement compared to the ego car.
+- Including another feature set, like the color histogram could improve the performance of the classifier.
+- Detecting oncoming vehicles should be a goal, since on a secondary road we do not want to crash on oncoming traffic
+- Trying around different classifiers (decision tree for instance) or adjusting the c parameter of the linear SVC
 
